@@ -1,0 +1,15 @@
+---
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Configure Nginx for reverse proxy
+  template:
+    src: nginx_stage_5b.conf.j2
+    dest: /etc/nginx/sites-available/stage_5b
+
+- name: Enable Nginx site
+  file:
+    src: /etc/nginx/sites-available/stage_5b
+    dest: /etc/nginx/sites-enabled/stage_5b

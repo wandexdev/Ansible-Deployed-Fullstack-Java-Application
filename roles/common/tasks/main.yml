@@ -1,0 +1,36 @@
+---
+- name: Update and upgrade apt packages
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Create application user
+  user:
+    name: "{{ app_user }}"
+    state: present
+    shell: /bin/bash
+    groups: sudo
+
+- name: Create /var/secrets directory
+  file:
+    path: /var/secrets
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Create /var/log/stage_5b directory
+  file:
+    path: /var/log/stage_5b
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+
+- name: Create application directory with correct permissions
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"

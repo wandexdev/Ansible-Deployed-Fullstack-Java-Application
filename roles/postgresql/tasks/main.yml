@@ -1,0 +1,54 @@
+---
+- name: Ensure PostgreSQL is installed
+  apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+      - python3-psycopg2
+    state: present
+
+- name: Ensure PostgreSQL is running
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Configure PostgreSQL user and database
+  become: yes
+  block:
+    - name: Create PostgreSQL user if not exists
+      shell: |
+        sudo -u postgres psql -c "DO \$\$ BEGIN
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='{{ db_user }}') THEN
+          CREATE USER {{ db_user }} WITH PASSWORD '{{ db_password }}' CREATEDB SUPERUSER;
+        END IF;
+        END \$\$;"
+
+   - name: Create PostgreSQL database and grant privileges
+      shell: |
+        sudo -u postgres psql -c "CREATE DATABASE {{ db_name }};"
+        sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{ db_user }};"
+
+- name: Save PostgreSQL credentials
+  copy:
+    content: "Username: {{ db_user }}\nPassword: {{ db_password }}"
+    dest: /var/secrets/pg_pw.txt
+    owner: root
+    group: root
+    mode: '0600'
+
+
+- name: Configure PostgreSQL for external connections
+  become: yes
+  lineinfile:
+    path: /etc/postgresql/14/main/postgresql.conf
+    regexp: '^local\s+all\s+postgres\s+peer'
+    line: 'local   all   postgres   md5'
+    notify: Restart PostgreSQL
+
+#- name: Allow PostgreSQL external connections
+#  blockinfile:
+#    path: /etc/postgresql/14/main/pg_hba.conf
+#    block: |
+#      host    all             all             0.0.0.0/0               md5
+

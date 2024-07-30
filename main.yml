@@ -1,0 +1,13 @@
+---
+- name: Setup and Deploy Java Boilerplate Application
+  hosts :hng
+  become: yes
+  vars_files:
+    - roles/common/vars/main.yml
+
+  roles:
+    - common
+    - postgresql
+    - rabbitmq
+    - java_app
+    - nginx

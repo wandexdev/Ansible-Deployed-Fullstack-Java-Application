@@ -1,0 +1,142 @@
+---
+- name: Setup and Deploy Java Boilerplate Application
+  hosts: all
+  become: yes
+  become_method: sudo
+
+  vars:
+    repository_url: "https://github.com/hngprojects/hng_boilerplate_java_web.git"
+    user_directory: "/home/hng"
+    project_directory: "/opt/stage_5b"
+    log_directory: "/var/log/stage_5b"
+    postgresql_user: "wandexdev"
+    postgresql_password: "hngpassword"
+    postgresql_db: "hngdatabase"
+    postgresql_connection_string: "jdbc:postgresql://localhost:5432/hngdatabase"
+    rabbitmq_user: "wandexdev"
+    rabbitmq_password: "hngpassword"
+    service_name: "hng-java-application"
+    server_ip: "127.0.0.1"
+
+  handlers:
+    - name: Restart postgresql
+      ansible.builtin.systemd:
+        name: postgresql
+        state: restarted
+
+  tasks:
+    - name: Update package list
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - openjdk-17-jdk
+        - maven
+        - rabbitmq-server
+        - nginx
+        - postgresql
+        - postgresql-contrib
+        - python3-psycopg2
+
+    - name: Create user hng with sudo privileges
+      user:
+        name: hng
+        state: present
+        groups: sudo
+        append: yes
+        create_home: yes
+        home: "{{ user_directory }}"
+        system: yes
+
+    - name: Clone the repository into /opt/stage_5b
+      git:
+        repo: "{{ repository_url }}"
+        dest: "{{ project_directory }}"
+        version: devops
+        force: yes
+        accept_hostkey: yes
+        update: yes
+        single_branch: yes
+
+    - name: Start and enable the service
+      ansible.builtin.systemd:
+        name: postgresql
+        state: started
+        enabled: true
+
+    - name: Create the database
+      community.postgresql.postgresql_db:
+        name: "{{ postgresql_db }}"
+        encoding: "UTF-8"
+      become: true
+      become_user: postgres
+
+    - name: Create the database user
+      community.postgresql.postgresql_user:
+        db: "{{ postgresql_db }}"
+        name: "{{ postgresql_user }}"
+        password: "{{ postgresql_password }}"
+      become: true
+      become_user: postgres
+
+    - name: Create RabbitMQ user
+      community.rabbitmq.rabbitmq_user:
+        user: "{{ rabbitmq_user }}"
+        password: "{{ rabbitmq_password }}"
+        state: present
+        permissions:
+          - vhost: /
+            configure_priv: ".*"
+            read_priv: ".*"
+            write_priv: ".*"
+
+    - name: Configure application.properties
+      template:
+        src: templates/application.properties.j2
+        dest: "{{ project_directory }}/src/main/resources/application.properties"
+        owner: hng
+        group: hng
+
+    - name: Build the application
+      shell: "sudo mvn clean install"
+      args:
+        chdir: "{{ project_directory }}"
+      become_user: hng
+
+    - name: Create systemd service file
+      template:
+        src: templates/hng-java-application.service.j2
+        dest: /etc/systemd/system/hng-java-application.service
+        owner: root
+
+    - name: Reload systemd
+      command: systemctl daemon-reload
+
+    - name: Start and enable the Java application service
+      service:
+        name: hng-java-application
+        state: started
+        enabled: yes
+
+    - name: Ensure Nginx is running
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+    - name: Configure Nginx to reverse proxy
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted

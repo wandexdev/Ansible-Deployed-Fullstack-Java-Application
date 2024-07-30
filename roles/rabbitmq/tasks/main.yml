@@ -1,0 +1,26 @@
+---
+- name: Install RabbitMQ
+  apt:
+    name: rabbitmq-server
+    state: present
+
+- name: Start RabbitMQ service
+  service:
+    name: rabbitmq-server
+    state: started
+    enabled: yes
+
+- name: Create RabbitMQ user
+  rabbitmq_user:
+    user: "{{ rabbitmq_user }}"
+    password: "{{ rabbitmq_password }}"
+    state: present
+    tags: administrator
+
+- name: Set RabbitMQ user permissions
+  rabbitmq_user_permissions:
+    user: "{{ rabbitmq_user }}"
+    vhost: "/"
+    configure_priv: ".*"
+    read_priv: ".*"
+    write_priv: ".*"

@@ -1,0 +1,4 @@
+---
+postgresql_db: hngdatabase
+postgresql_user: wandexdev
+postgresql_password: hngpassword

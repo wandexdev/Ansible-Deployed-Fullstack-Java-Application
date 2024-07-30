@@ -1,0 +1,90 @@
+---
+- name: Clone  branch of java app repository
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ app_dir }}"
+    version: "{{ repo_branch }}"
+    force: yes
+  become: yes
+  become_user: "{{ app_user }}"
+  environment:
+    GIT_ASKPASS: /bin/true
+
+- name: Ensure /opt/stage_5b is owned by application user
+  file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    recurse: yes
+
+- name: Install dependencies
+  apt:
+    name:
+      - openjdk-17-jdk
+      - maven
+    state: present
+
+- name: Update pom.xml with Spring Boot dependencies
+  template:
+    src: pom.xml.j2
+    dest: "{{ app_dir }}/pom.xml"
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Copy application.properties
+  template:
+    src: application.properties.j2
+    dest: "{{ app_dir }}/src/main/resources/application.properties"
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Install Maven wrapper
+  command: mvn -N io.takari:maven:wrapper
+  args:
+    chdir: "{{ app_dir }}"
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Ensure Maven Wrapper is executable
+  file:
+    path: "{{ app_dir }}/mvnw"
+    mode: '0755'
+
+- name: Build application
+  command: ./mvnw clean package
+  args:
+    chdir: "{{ app_dir }}"
+  environment:
+    JAVA_HOME: "{{ java_home }}"
+    MAVEN_OPTS: "-Xmx1024m"
+    SPRING_DATASOURCE_URL: "jdbc:postgresql://{{ db_host }}:5432/{{ db_name }}"
+    SPRING_DATASOURCE_USERNAME: "{{ db_user }}"
+    SPRING_DATASOURCE_PASSWORD: "{{ db_password }}"
+    SPRING_DATASOURCE_DRIVER_CLASS_NAME: "org.postgresql.Driver"
+    SPRING_JPA_DATABASE_PLATFORM: "org.hibernate.dialect.PostgreSQLDialect"
+    SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+  become: yes
+  become_user: "{{ app_user }}"
+
+- name: Configure application service
+  template:
+    src: stage_5b.service.j2
+    dest: /etc/systemd/system/stage_5b.service
+
+- name: Start and enable application service
+  systemd:
+    name: stage_5b
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: Ensure log files are owned by application user
+  file:
+    path: "{{ item }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+  loop:
+    - /var/log/stage_5b/error.log
+    - /var/log/stage_5b/out.log
