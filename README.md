@@ -47,6 +47,10 @@ Ansible-Deployed-Fullstack-Java-Application/
 
 ```
 
+## Requirements
+- Ansible installed on your local machine.
+- Access to the target server with appropriate SSH keys.
+
 ## Usage
 - Create a `hosts` or `inventory` file. Can be named anything, it would contain slave hosts name or ip address and private key for ssh(if needed)
 ```env
