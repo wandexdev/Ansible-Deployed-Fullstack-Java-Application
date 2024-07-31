@@ -1,5 +1,7 @@
 # Ansible-Deployed-Fullstack-Java-Application
 
+A comprehensive end-end automated deployment set up that uses Ansible to automate the deployment and configuration of a full-stack Java application. The setup includes configuring PostgreSQL, RabbitMQ, Nginx, and the Java application itself on an ubuntu 22.04 new server.
+
 ## Folder Structure
 ```
 Ansible-Deployed-Fullstack-Java-Application/
