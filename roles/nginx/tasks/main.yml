@@ -13,3 +13,17 @@
   file:
     src: /etc/nginx/sites-available/stage_5b
     dest: /etc/nginx/sites-enabled/stage_5b
+    state: link
+
+- name: Remove default Nginx configuration
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: Test Nginx configuration
+  command: nginx -t
+
+- name: Reload Nginx
+  service:
+    name: nginx
+    state: reloaded
