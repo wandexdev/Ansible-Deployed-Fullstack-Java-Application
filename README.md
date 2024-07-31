@@ -48,6 +48,8 @@ Ansible-Deployed-Fullstack-Java-Application/
 ## Usage
 - Create a `hosts` or `inventory` file. Can be named anything, it would contain slave hosts name or ip address and private key for ssh(if needed)
 ```env
+# sample hosts file
+
 [hng]
 52.91.184.189
 
@@ -58,6 +60,8 @@ ansible_ssh_private_key_file=/home/ubuntu/ubuntu-sterling.pem
 
 - Create your `ansible.cfg` file. This eliminates the ned for an appended inventory/host file in the command.
 ```cfg
+# sample ansible.cfg file
+
 [defaults]
 inventory=./hosts
 ```
