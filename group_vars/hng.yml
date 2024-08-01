@@ -3,9 +3,12 @@ app_user: hng
 db_user: wandexdev
 db_password: hngpassword
 db_name: hngdatabase
-db_host: hng
+db_host: localhost
 ansible_remote_tmp: /tmp/ansible
-repo_url: https://github.com/hngprojects/hng_boilerplate_java_web
+repo_url: https://github.com/hngprojects/hng_boilerplate_java_web.git
 repo_branch: devops
 java_home: /usr/lib/jvm/java-17-openjdk-amd64
 ansible_python_interpreter: /usr/bin/python3
+postgresql_connection_string: jdbc:postgresql://localhost:5432/hngdatabase
+rabbitmq_user: wandexdev
+rabbitmq_password: hngpassword
