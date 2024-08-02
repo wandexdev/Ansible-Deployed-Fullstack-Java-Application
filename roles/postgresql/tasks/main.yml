@@ -24,7 +24,7 @@
         END IF;
         END \$\$;"
 
-   - name: Create PostgreSQL database and grant privileges
+    - name: Create PostgreSQL database and grant privileges
       shell: |
         sudo -u postgres psql -c "CREATE DATABASE {{ db_name }};"
         sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE {{ db_name }} TO {{ db_user }};"
@@ -37,18 +37,18 @@
     group: root
     mode: '0600'
 
-
-- name: Configure PostgreSQL for external connections
+- name: Configure PostgreSQL for local connections
   become: yes
   lineinfile:
-    path: /etc/postgresql/14/main/postgresql.conf
+    path: /etc/postgresql/14/main/pg_hba.conf
     regexp: '^local\s+all\s+postgres\s+peer'
     line: 'local   all   postgres   md5'
     notify: Restart PostgreSQL
 
-#- name: Allow PostgreSQL external connections
-#  blockinfile:
-#    path: /etc/postgresql/14/main/pg_hba.conf
-#    block: |
-#      host    all             all             0.0.0.0/0               md5
-
+- name: Allow PostgreSQL external connections
+  become: yes
+  blockinfile:
+    path: /etc/postgresql/14/main/pg_hba.conf
+    block: |
+      host    all             all             0.0.0.0/0               md5
+    notify: Restart PostgreSQL
